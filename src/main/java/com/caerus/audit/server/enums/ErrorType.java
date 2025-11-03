@@ -1,9 +1,9 @@
 package com.caerus.audit.server.enums;
 
 public enum ErrorType {
-    NORMAL(0),
-    CONNECTION_ERROR(1),
-    STORAGE_ERROR(2);
+    NORMAL(1),
+    CONNECTION_ERROR(2),
+    STORAGE_ERROR(3);
 
     private final int code;
     ErrorType(int code) { this.code = code; }
