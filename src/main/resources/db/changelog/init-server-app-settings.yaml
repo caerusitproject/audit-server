@@ -1,0 +1,286 @@
+databaseChangeLog:
+  - changeSet:
+      id: 1
+      author: system
+      changes:
+        - createTable:
+            tableName: server_app_settings
+            columns:
+              - column:
+                  name: setting_id
+                  type: SMALLINT
+                  autoIncrement: true
+                  constraints:
+                    primaryKey: true
+              - column:
+                  name: server_ip_addr
+                  type: VARCHAR(45)
+              - column:
+                  name: config_idle_timeout
+                  type: SMALLINT
+              - column:
+                  name: config_capture_interval
+                  type: SMALLINT
+              - column:
+                  name: config_comm_issue_auto_resolve_window
+                  type: SMALLINT
+              - column:
+                  name: config_heartbeat_interval
+                  type: SMALLINT
+              - column:
+                  name: config_dest_folder_path
+                  type: VARCHAR(1024)
+              - column:
+                  name: config_admin_email_addr
+                  type: VARCHAR(255)
+              - column:
+                  name: config_admin_ad_groups
+                  type: VARCHAR(512)
+              - column:
+                  name: folder_structure_template
+                  type: VARCHAR(1024)
+              - column:
+                  name: temp_folder_free_space_threshold
+                  type: SMALLINT
+              - column:
+                  name: lock_threshold
+                  type: SMALLINT
+              - column:
+                  name: email_notify_enabled
+                  type: BOOLEAN
+              - column:
+                  name: created_at
+                  type: TIMESTAMP WITH TIME ZONE
+                  defaultValueComputed: now()
+              - column:
+                  name: updated_at
+                  type: TIMESTAMP WITH TIME ZONE
+                  defaultValueComputed: now()
+
+  - changeSet:
+      id: 2
+      author: system
+      preConditions:
+        - sqlCheck:
+            expectedResult: 0
+            sql: SELECT COUNT(*) FROM server_app_settings
+      changes:
+        - insert:
+            tableName: server_app_settings
+            columns:
+              - column:
+                  name: server_ip_addr
+                  value: '0.0.0.0'
+              - column:
+                  name: config_idle_timeout
+                  valueNumeric: 12
+              - column:
+                  name: config_capture_interval
+                  valueNumeric: 3
+              - column:
+                  name: config_comm_issue_auto_resolve_window
+                  valueNumeric: 10
+              - column:
+                  name: config_heartbeat_interval
+                  valueNumeric: 1
+              - column:
+                  name: config_dest_folder_path
+                  value: 'D:\\AuditImages'
+              - column:
+                  name: config_admin_email_addr
+                  value: 'komal@caerusitconsulting.com'
+              - column:
+                  name: config_admin_ad_groups
+                  value: 'Domain Admins'
+              - column:
+                  name: temp_folder_free_space_threshold
+                  value: 10
+              - column:
+                  name: lock_threshold
+                  value: 90
+              - column:
+                  name: email_notify_enabled
+                  value: true
+
+  - changeSet:
+      id: 3
+      author: system
+      changes:
+        - createTable:
+            tableName: error_type_mstr
+            columns:
+              - column:
+                  name: error_type_id
+                  type: TINYINT
+                  autoIncrement: true
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: error_type_cd
+                  type: TINYINT
+                  constraints:
+                    unique: true
+                    nullable: false
+              - column:
+                  name: error_type_mne
+                  type: NVARCHAR(40)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: error_type_desc
+                  type: NVARCHAR(254)
+
+  - changeSet:
+      id: 4
+      author: system
+      changes:
+        - createTable:
+            tableName: event_type_mstr
+            columns:
+              - column:
+                  name: event_type_id
+                  type: TINYINT
+                  autoIncrement: true
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: event_type_cd
+                  type: TINYINT
+                  constraints:
+                    unique: true
+                    nullable: false
+              - column:
+                  name: event_type_mne
+                  type: NVARCHAR(40)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: event_type_desc
+                  type: NVARCHAR(254)
+
+  - changeSet:
+      id: 5
+      author: system
+      changes:
+        - insert:
+            tableName: error_type_mstr
+            columns:
+              - column:
+                  name: error_type_cd
+                  valueNumeric: 0
+              - column:
+                  name: error_type_mne
+                  value: 'NORMAL'
+              - column:
+                  name: error_type_desc
+                  value: 'Normal operation, no error.'
+
+        - insert:
+            tableName: error_type_mstr
+            columns:
+              - column:
+                  name: error_type_cd
+                  valueNumeric: 1
+              - column:
+                  name: error_type_mne
+                  value: 'CONNECTION_ERROR'
+              - column:
+                  name: error_type_desc
+                  value: 'Server cannot connect to Active Directory or similar connection issue.'
+
+        - insert:
+            tableName: error_type_mstr
+            columns:
+              - column:
+                  name: error_type_cd
+                  valueNumeric: 2
+              - column:
+                  name: error_type_mne
+                  value: 'STORAGE_ERROR'
+              - column:
+                  name: error_type_desc
+                  value: 'Unable to write file to disk or insufficient storage space.'
+
+  - changeSet:
+      id: 6
+      author: system
+      changes:
+        - insert:
+            tableName: event_type_mstr
+            columns:
+              - column:
+                  name: event_type_cd
+                  valueNumeric: 0
+              - column:
+                  name: event_type_mne
+                  value: 'NORMAL'
+              - column:
+                  name: event_type_desc
+                  value: 'Normal event logged successfully.'
+
+        - insert:
+            tableName: event_type_mstr
+            columns:
+              - column:
+                  name: event_type_cd
+                  valueNumeric: 1
+              - column:
+                  name: event_type_mne
+                  value: 'NETWORK_FAILURE'
+              - column:
+                  name: event_type_desc
+                  value: 'Network connectivity issue detected.'
+
+        - insert:
+            tableName: event_type_mstr
+            columns:
+              - column:
+                  name: event_type_cd
+                  valueNumeric: 2
+              - column:
+                  name: event_type_mne
+                  value: 'SERVICE_FAILED'
+              - column:
+                  name: event_type_desc
+                  value: 'Server or client service has failed.'
+
+        - insert:
+            tableName: event_type_mstr
+            columns:
+              - column:
+                  name: event_type_cd
+                  valueNumeric: 3
+              - column:
+                  name: event_type_mne
+                  value: 'CLIENT_STORAGE_FULL'
+              - column:
+                  name: event_type_desc
+                  value: 'Client storage is almost full.'
+
+        - insert:
+            tableName: event_type_mstr
+            columns:
+              - column:
+                  name: event_type_cd
+                  valueNumeric: 4
+              - column:
+                  name: event_type_mne
+                  value: 'SERVER_SETTING_PUSHED'
+              - column:
+                  name: event_type_desc
+                  value: 'Server configuration has been sent to all clients.'
+
+        - insert:
+            tableName: event_type_mstr
+            columns:
+              - column:
+                  name: event_type_cd
+                  valueNumeric: 5
+              - column:
+                  name: event_type_mne
+                  value: 'CLIENT_CONFIG_REQUEST'
+              - column:
+                  name: event_type_desc
+                  value: 'Client requested configuration settings from server.'

@@ -11,15 +11,35 @@
 
     <appender name="FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
         <file>${LOG_PATH}/${APP_NAME}/${APP_NAME}.log</file>
+
         <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
             <fileNamePattern>${LOG_PATH}/${APP_NAME}/${APP_NAME}-%d{yyyy-MM-dd}.log</fileNamePattern>
             <maxHistory>30</maxHistory>
         </rollingPolicy>
-        <encoder class="net.logstash.logback.encoder.LogstashEncoder">
-            <customFields>{"app":"${APP_NAME}","env":"dev"}</customFields>
-            <includeMdcKeyName>correlationId</includeMdcKeyName>
+
+        <encoder class="net.logstash.logback.encoder.LoggingEventCompositeJsonEncoder">
+            <providers>
+                <timestamp fieldName="timestamp"/>
+                <logLevel fieldName="level"/>
+                <threadName fieldName="thread"/>
+                <loggerName fieldName="source"/>
+                <message fieldName="message"/>
+                <stackTrace fieldName="error"/>
+
+                <provider class="net.logstash.logback.composite.GlobalCustomFieldsJsonProvider">
+                    <customFields>{"app":"${APP_NAME}","env":"dev"}</customFields>
+                </provider>
+
+                <mdc>
+                    <includeMdcKeyName>correlationId</includeMdcKeyName>
+                </mdc>
+            </providers>
+
+            <jsonGeneratorDecorator
+                    class="net.logstash.logback.decorate.PrettyPrintingJsonGeneratorDecorator"/>
         </encoder>
     </appender>
+
 
     <appender name="ASYNC_FILE" class="ch.qos.logback.classic.AsyncAppender">
         <appender-ref ref="FILE"/>
