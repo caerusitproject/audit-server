@@ -169,7 +169,7 @@ databaseChangeLog:
             columns:
               - column:
                   name: error_type_cd
-                  valueNumeric: 0
+                  valueNumeric: 1
               - column:
                   name: error_type_mne
                   value: 'NORMAL'
@@ -182,7 +182,7 @@ databaseChangeLog:
             columns:
               - column:
                   name: error_type_cd
-                  valueNumeric: 1
+                  valueNumeric: 2
               - column:
                   name: error_type_mne
                   value: 'CONNECTION_ERROR'
@@ -195,7 +195,7 @@ databaseChangeLog:
             columns:
               - column:
                   name: error_type_cd
-                  valueNumeric: 2
+                  valueNumeric: 3
               - column:
                   name: error_type_mne
                   value: 'STORAGE_ERROR'
@@ -212,7 +212,7 @@ databaseChangeLog:
             columns:
               - column:
                   name: event_type_cd
-                  valueNumeric: 0
+                  valueNumeric: 1
               - column:
                   name: event_type_mne
                   value: 'NORMAL'
@@ -225,7 +225,7 @@ databaseChangeLog:
             columns:
               - column:
                   name: event_type_cd
-                  valueNumeric: 1
+                  valueNumeric: 2
               - column:
                   name: event_type_mne
                   value: 'NETWORK_FAILURE'
@@ -238,7 +238,7 @@ databaseChangeLog:
             columns:
               - column:
                   name: event_type_cd
-                  valueNumeric: 2
+                  valueNumeric: 3
               - column:
                   name: event_type_mne
                   value: 'SERVICE_FAILED'
@@ -251,7 +251,7 @@ databaseChangeLog:
             columns:
               - column:
                   name: event_type_cd
-                  valueNumeric: 3
+                  valueNumeric: 4
               - column:
                   name: event_type_mne
                   value: 'CLIENT_STORAGE_FULL'
@@ -264,7 +264,7 @@ databaseChangeLog:
             columns:
               - column:
                   name: event_type_cd
-                  valueNumeric: 4
+                  valueNumeric: 5
               - column:
                   name: event_type_mne
                   value: 'SERVER_SETTING_PUSHED'
@@ -277,7 +277,7 @@ databaseChangeLog:
             columns:
               - column:
                   name: event_type_cd
-                  valueNumeric: 5
+                  valueNumeric: 6
               - column:
                   name: event_type_mne
                   value: 'CLIENT_CONFIG_REQUEST'

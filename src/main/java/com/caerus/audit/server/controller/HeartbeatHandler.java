@@ -1,6 +1,11 @@
 package com.caerus.audit.server.controller;
 
+import com.caerus.audit.server.dto.ServerAppSettingsDto;
+import com.caerus.audit.server.enums.ErrorType;
+import com.caerus.audit.server.enums.EventType;
 import com.caerus.audit.server.service.ErrorEventPublisher;
+import com.caerus.audit.server.service.LoggingService;
+import com.caerus.audit.server.service.ServerAppSettingsService;
 import com.caerus.audit.server.util.MdcUtils;
 import com.caerus.audit.server.websocket.WebSocketSessionManager;
 import java.time.Duration;
@@ -22,15 +27,29 @@ import org.springframework.web.socket.handler.TextWebSocketHandler;
 public class HeartbeatHandler extends TextWebSocketHandler {
 
   private final WebSocketSessionManager webSocketSessionManager;
-  private final ErrorEventPublisher errorPublisher;
+  private final ServerAppSettingsService settingsService;
+  private final LoggingService loggingService;
 
   private final ConcurrentHashMap<String, WebSocketSession> activeClients =
       new ConcurrentHashMap<>();
   private final ConcurrentHashMap<String, Instant> lastHeartbeat = new ConcurrentHashMap<>();
   private final Map<String, String> sessionIdToClient = new ConcurrentHashMap<>();
 
-  private static final Duration HEARTBEAT_TIMEOUT = Duration.ofSeconds(50);
+ private Duration getHeartbeatTimeout(){
+     ServerAppSettingsDto settings = settingsService.getLatest();
+     short timeoutSec = settings != null && settings.getConfigCommIssueAutoResolveWindow() != null
+             ? settings.getConfigCommIssueAutoResolveWindow()
+             : 120;
+     return Duration.ofSeconds(timeoutSec);
+ }
 
+ private Duration getHeartbeatInterval(){
+     ServerAppSettingsDto settings = settingsService.getLatest();
+     short intervalSec = settings != null && settings.getConfigHeartbeatInterval() != null
+             ? settings.getConfigHeartbeatInterval()
+             : 60;
+     return Duration.ofSeconds(intervalSec);
+ }
   @Override
   public void afterConnectionEstablished(WebSocketSession session) {
     String clientId = extractClientId(session);
@@ -42,8 +61,14 @@ public class HeartbeatHandler extends TextWebSocketHandler {
             activeClients.put(clientId, session);
             lastHeartbeat.put(clientId, Instant.now());
             sessionIdToClient.put(sessionId, clientId);
-            log.info("Client connected: {}", clientId);
             webSocketSessionManager.registerClient(clientId, session);
+
+            loggingService.logEvent(
+                    EventType.NORMAL,
+                    "Client connected: " + clientId,
+                    "HeartbeatHandler"
+            );
+            log.info("Client connected: {}", clientId);
           } catch (Exception e) {
             handleException("afterConnectionEstablished", clientId, e);
           }
@@ -57,7 +82,7 @@ public class HeartbeatHandler extends TextWebSocketHandler {
         clientId,
         () -> {
           try {
-            String payload = message.getPayload();
+            String payload = message.getPayload().trim();
 
             if ("pong".equalsIgnoreCase(payload.trim())) {
               log.info("Received pong from {}", clientId);
@@ -82,6 +107,13 @@ public class HeartbeatHandler extends TextWebSocketHandler {
             lastHeartbeat.remove(clientId);
             sessionIdToClient.remove(session.getId());
             webSocketSessionManager.removeClient(clientId);
+
+            loggingService.logEvent(
+                    EventType.SERVICE_FAILED,
+                    "Client disconnected: " + clientId + " (status=" + status + ")",
+                    "HeartbeatHandler"
+            );
+
             log.warn("Client disconnected: {} (status={})", clientId, status);
           } catch (Exception e) {
             handleException("afterConnectionClosed", clientId, e);
@@ -89,7 +121,7 @@ public class HeartbeatHandler extends TextWebSocketHandler {
         });
   }
 
-  @Scheduled(fixedRate = 1000)
+  @Scheduled(fixedRateString = "#{@serverAppSettingsService.getLatest()?.configHeartbeatInterval != null ? @serverAppSettingsService.getLatest().configHeartbeatInterval * 1000 : 60000}")
   public void broadcastPing() {
     activeClients.forEach(
         (clientId, session) ->
@@ -107,23 +139,29 @@ public class HeartbeatHandler extends TextWebSocketHandler {
                 }));
   }
 
-  @Scheduled(fixedRate = 5000)
+    /**
+     * Check for unresponsive clients every 2 minutes.
+     */
+    @Scheduled(fixedRate = 120000)
   public void cleanupStaleSessions() {
     Instant now = Instant.now();
+    Duration timeout = getHeartbeatTimeout();
+
     lastHeartbeat.forEach(
         (clientId, lastPing) -> {
-          if (Duration.between(lastPing, now).compareTo(HEARTBEAT_TIMEOUT) > 0) {
+          if (Duration.between(lastPing, now).compareTo(timeout) > 0) {
             MdcUtils.runWith(
                 clientId,
                 () -> {
-                  log.error(
-                      "Client {} missed heartbeat > {}s — marking offline",
-                      clientId,
-                      HEARTBEAT_TIMEOUT.getSeconds());
+                    log.warn("Client {} missed heartbeat > {}s — marked offline", clientId, timeout.getSeconds());
                   activeClients.remove(clientId);
                   lastHeartbeat.remove(clientId);
                   webSocketSessionManager.removeClient(clientId);
-                  errorPublisher.publishClientTimeout(clientId, HEARTBEAT_TIMEOUT);
+                  loggingService.logError(
+                          ErrorType.CONNECTION_ERROR,
+                          "Client" + clientId + " missed heartbeat for " + timeout.getSeconds() + "s, marked offline",
+                          "HeartbeatHandler"
+                  );
                 });
           }
         });
@@ -132,7 +170,11 @@ public class HeartbeatHandler extends TextWebSocketHandler {
   private void handleException(String context, String clientId, Exception e) {
     log.error("Error {} for client {}: {}", context, clientId, e.getMessage(), e);
     try {
-      errorPublisher.publishWebSocketError(context, clientId, e);
+        loggingService.logError(
+                ErrorType.CONNECTION_ERROR,
+                String.format("Error in %s for client %s: %s", context, clientId, e.getMessage()),
+                "HeartbeatHandler"
+        );
     } catch (Exception ex) {
       log.error("Failed to publish error event: {}", ex.getMessage(), ex);
     }
