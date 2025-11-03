@@ -1,4 +1,4 @@
-name: CI API Audit Server
+name: CI Audit Server
 
 on:
   push:

@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Server App Settings</title>
+    <link rel="stylesheet" th:href="@{/webjars/bootstrap/5.3.3/css/bootstrap.min.css}" />
+</head>
+<body class="bg-light">
+<div class="container mt-5">
+    <div class="card shadow-lg">
+        <div class="card-header bg-primary text-white">
+            <h4>Server Configuration Settings</h4>
+        </div>
+        <div class="card-body">
+            <form th:action="@{/settings-ui}" th:object="${settings}" method="post">
+<!--                <div th:if="${successMessage}" class="alert alert-success" th:text="${successMessage}"></div>-->
+<!--                <div th:if="${errorMessage}" class="alert alert-danger" th:text="${errorMessage}"></div>-->
+
+                <div th:if="${successMessage}" id="successAlert"
+                     class="alert alert-success alert-dismissible fade show" role="alert">
+                    <span th:text="${successMessage}"></span>
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+
+                <!-- Error Message -->
+                <div th:if="${errorMessage}" id="errorAlert"
+                     class="alert alert-danger alert-dismissible fade show" role="alert">
+                    <span th:text="${errorMessage}"></span>
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label">Server IP Address</label>
+                    <input type="text" class="form-control" th:field="*{serverIpAddr}" placeholder="0.0.0.0"/>
+                </div>
+
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label">Idle Timeout (sec)</label>
+                        <input type="number" class="form-control" th:field="*{configIdleTimeout}" min="1" max="3600"/>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label">Capture Interval (sec)</label>
+                        <input type="number" class="form-control" th:field="*{configCaptureInterval}" min="1" max="3600"/>
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label">Comm Issue Auto Resolve (sec)</label>
+                        <input type="number" class="form-control" th:field="*{configCommIssueAutoResolveWindow}" min="1" max="3600"/>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label">Heartbeat Interval (sec)</label>
+                        <input type="number" class="form-control" th:field="*{configHeartbeatInterval}" min="1" max="3600"/>
+                    </div>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label">Destination Folder Path</label>
+                    <input type="text" class="form-control" th:field="*{configDestFolderPath}" placeholder="D:\AuditImages"/>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label">Admin Email</label>
+                    <input type="email" class="form-control" th:field="*{configAdminEmailAddr}" placeholder="admin@domain.com"/>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label">Admin AD Groups</label>
+                    <input type="text" class="form-control" th:field="*{configAdminADGroups}" placeholder="Domain Admins"/>
+                </div>
+
+                <button type="submit" class="btn btn-success mt-3">Save Changes</button>
+            </form>
+        </div>
+    </div>
+</div>
+<script th:src="@{/webjars/bootstrap/5.3.3/js/bootstrap.bundle.min.js}"></script>
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        const alerts = document.querySelectorAll("#successAlert, #errorAlert");
+        alerts.forEach(alert => {
+            if (alert) {
+                setTimeout(() => {
+                    // Smooth fade-out using Bootstrap classes
+                    alert.classList.remove('show');
+                    alert.classList.add('fade');
+
+                    // After transition (~500ms), remove from DOM entirely
+                    setTimeout(() => alert.remove(), 500);
+                }, 3000);
+            }
+        });
+    });
+</script>
+</body>
+</html>
