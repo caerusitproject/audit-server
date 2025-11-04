@@ -44,23 +44,25 @@ public class ServerAppSettingsService {
 
   @Transactional
   public ServerAppSettingsDto update(ServerAppSettingsDto updateDto) {
-      try {
-          ServerAppSettings entity = ServerAppSettingsMapper.toEntity(updateDto);
+    try {
+      ServerAppSettings entity = ServerAppSettingsMapper.toEntity(updateDto);
 
-          entity.setSettingId(null);
-          ServerAppSettings saved = serverAppSettingsRepository.save(entity);
-          ServerAppSettingsDto savedDto = ServerAppSettingsMapper.toDto(saved);
-          cache.set(savedDto);
+      entity.setSettingId(null);
+      ServerAppSettings saved = serverAppSettingsRepository.save(entity);
+      ServerAppSettingsDto savedDto = ServerAppSettingsMapper.toDto(saved);
+      cache.set(savedDto);
 
-          // publish event so websocket notifier can push to clients
-          eventPublisher.publishEvent(new SettingsChangedEvent(this, savedDto));
-          loggingService.logEvent(EventType.SERVER_SETTING_PUSHED, "Server settings updated and pushed to all clients",
-                  "System");
-          log.info("Server settings updated and cached (id={})", savedDto.getSettingId());
-          return savedDto;
-      } catch (Exception e) {
-          loggingService.logError(ErrorType.NORMAL, e.getMessage(), e.getClass().getName());
-          throw e;
-      }
+      // publish event so websocket notifier can push to clients
+      eventPublisher.publishEvent(new SettingsChangedEvent(this, savedDto));
+      loggingService.logEvent(
+          EventType.SERVER_SETTING_PUSHED,
+          "Server settings updated and pushed to all clients",
+          "System");
+      log.info("Server settings updated and cached (id={})", savedDto.getSettingId());
+      return savedDto;
+    } catch (Exception e) {
+      loggingService.logError(ErrorType.NORMAL, e.getMessage(), e.getClass().getName());
+      throw e;
+    }
   }
 }

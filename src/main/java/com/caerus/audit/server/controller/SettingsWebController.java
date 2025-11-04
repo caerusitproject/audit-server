@@ -18,27 +18,28 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 @RequiredArgsConstructor
 public class SettingsWebController {
 
-    private final ServerAppSettingsService service;
+  private final ServerAppSettingsService service;
 
-    @GetMapping
-    public String viewSettings(Model model){
-        ServerAppSettingsDto settingsDto = service.getLatest();
-        if(settingsDto == null){
-            settingsDto = new ServerAppSettingsDto();
-        }
-        model.addAttribute("settings", settingsDto);
-        return "settings";
+  @GetMapping
+  public String viewSettings(Model model) {
+    ServerAppSettingsDto settingsDto = service.getLatest();
+    if (settingsDto == null) {
+      settingsDto = new ServerAppSettingsDto();
     }
+    model.addAttribute("settings", settingsDto);
+    return "settings";
+  }
 
-    @PostMapping
-    public String updateSettings(@Valid @ModelAttribute("settings") ServerAppSettingsDto settingsDto,
-                                 BindingResult result,
-                                 RedirectAttributes redirectAttributes){
-        if(result.hasErrors()){
-            return "settings";
-        }
-        service.update(settingsDto);
-        redirectAttributes.addFlashAttribute("successMessage", "Settings updated successfully!");
-        return "redirect:/settings-ui";
+  @PostMapping
+  public String updateSettings(
+      @Valid @ModelAttribute("settings") ServerAppSettingsDto settingsDto,
+      BindingResult result,
+      RedirectAttributes redirectAttributes) {
+    if (result.hasErrors()) {
+      return "settings";
     }
+    service.update(settingsDto);
+    redirectAttributes.addFlashAttribute("successMessage", "Settings updated successfully!");
+    return "redirect:/settings-ui";
+  }
 }

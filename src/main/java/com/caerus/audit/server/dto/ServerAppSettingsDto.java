@@ -49,10 +49,12 @@ public class ServerAppSettingsDto {
   @Size(max = 1024)
   private String folderStructureTemplate;
 
-  @Min(1) @Max(100)
+  @Min(1)
+  @Max(100)
   private Short tempFolderFreeSpaceThreshold;
 
-  @Min(1) @Max(100)
+  @Min(1)
+  @Max(100)
   private Short lockThreshold;
 
   private Boolean emailNotifyEnabled;

@@ -30,7 +30,8 @@ public class LoggingService {
       ErrorTypeMstr type =
           errorTypeRepo
               .findById(errorType.getCode())
-              .orElseThrow(() -> new IllegalStateException("Invalid error type: " + errorType.getCode()));
+              .orElseThrow(
+                  () -> new IllegalStateException("Invalid error type: " + errorType.getCode()));
 
       String ip = InetAddress.getLocalHost().getHostAddress();
       ErrorLog logEntry =
@@ -54,7 +55,8 @@ public class LoggingService {
       EventTypeMstr type =
           eventTypeRepo
               .findById(eventType.getCode())
-              .orElseThrow(() -> new IllegalStateException("Invalid event type: " + eventType.getCode()));
+              .orElseThrow(
+                  () -> new IllegalStateException("Invalid event type: " + eventType.getCode()));
 
       String ip = InetAddress.getLocalHost().getHostAddress();
       EventLog event =
