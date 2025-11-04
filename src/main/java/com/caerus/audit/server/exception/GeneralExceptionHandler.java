@@ -15,24 +15,20 @@ import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExcep
 @RequiredArgsConstructor
 public class GeneralExceptionHandler extends ResponseEntityExceptionHandler {
 
-    private final LoggingService loggingService;
+  private final LoggingService loggingService;
 
   @ExceptionHandler(Exception.class)
   public ResponseEntity<Object> handleException(Exception ex) {
     log.error("Exception occurred: {}", ex.getMessage());
     loggingService.logError(ErrorType.NORMAL, ex.getMessage(), ex.getClass().getName());
-    return ResponseEntity
-            .status(HttpStatus.INTERNAL_SERVER_ERROR)
-            .body("An unexpected error occurred: " + ex.getMessage());
+    return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+        .body("An unexpected error occurred: " + ex.getMessage());
   }
 
   @ExceptionHandler(RuntimeException.class)
-    public ResponseEntity<String> handleRuntimeException(RuntimeException ex){
-      log.error("RuntimeException occurred: {}", ex.getMessage());
-      loggingService.logError(ErrorType.NORMAL, ex.getMessage(), ex.getClass().getName());
-      return ResponseEntity
-              .status(HttpStatus.BAD_REQUEST)
-              .body("Runtime error: " + ex.getMessage());
+  public ResponseEntity<String> handleRuntimeException(RuntimeException ex) {
+    log.error("RuntimeException occurred: {}", ex.getMessage());
+    loggingService.logError(ErrorType.NORMAL, ex.getMessage(), ex.getClass().getName());
+    return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Runtime error: " + ex.getMessage());
   }
-
 }
