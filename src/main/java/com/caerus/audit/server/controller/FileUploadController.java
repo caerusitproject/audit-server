@@ -1,6 +1,7 @@
 package com.caerus.audit.server.controller;
 
 import com.caerus.audit.server.dto.FileUploadResult;
+import com.caerus.audit.server.dto.UploadAckMessage;
 import com.caerus.audit.server.enums.ErrorType;
 import com.caerus.audit.server.enums.EventType;
 import com.caerus.audit.server.service.FileStorageService;
@@ -11,11 +12,10 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
+
+import java.util.UUID;
 
 @Slf4j
 @RestController
@@ -23,40 +23,75 @@ import org.springframework.web.multipart.MultipartFile;
 @RequestMapping("/api/v1/upload")
 public class FileUploadController {
 
-  private final FileStorageService fileStorageService;
-  private final LoggingService loggingService;
-  private final WebSocketSessionManager webSocketSessionManager;
 
-  @PostMapping
-  public ResponseEntity<FileUploadResult> uploadFile(
-      @RequestParam("file") MultipartFile file,
-      @RequestParam("clientId") String clientId,
-      HttpServletRequest request) {
-    if (clientId == null || clientId.isBlank()) {
-      return ResponseEntity.badRequest()
-          .body(new FileUploadResult(false, null, "Missing clientId"));
-    }
+    private final FileStorageService fileStorageService;
+    private final LoggingService loggingService;
+    private final WebSocketSessionManager webSocketSessionManager;
 
-    try {
-      FileUploadResult result = fileStorageService.saveAndVerifyFile(file, clientId);
-      if (result.success()) {
-        loggingService.logEvent(EventType.NORMAL, "File uploaded successfully", clientId);
-        webSocketSessionManager.sendTextToClient(clientId, "UPLOAD_SUCCESS:" + result.filePath());
-        return ResponseEntity.ok(result);
-      } else {
-        loggingService.logError(ErrorType.STORAGE_ERROR, "File integrity failed", clientId);
-        webSocketSessionManager.sendTextToClient(clientId, "UPLOAD_FAILED:" + result.message());
-        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(result);
-      }
-    } catch (Exception e) {
-      log.error("File upload failed for client {}: {}", clientId, e.getMessage(), e);
-      loggingService.logError(ErrorType.STORAGE_ERROR, e.getMessage(), clientId);
-      try {
-        webSocketSessionManager.sendTextToClient(clientId, "UPLOAD_FAILED:" + e.getMessage());
-      } catch (Exception ignored) {
-      }
-      return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-          .body(new FileUploadResult(false, null, e.getMessage()));
+    @PostMapping
+    public ResponseEntity<FileUploadResult> uploadFile(
+            @RequestParam("file") MultipartFile file,
+            @RequestHeader(value = "Client-Id", required = false) String clientId,
+            @RequestHeader(value = "X-Upload-ID", required = false) String uploadId,
+            HttpServletRequest request) {
+
+        if (clientId == null || clientId.isBlank()) {
+            return ResponseEntity.badRequest()
+                    .body(new FileUploadResult(false, null, "Missing Client-Id header"));
+        }
+
+        if (uploadId == null || uploadId.isBlank()) {
+            uploadId = UUID.randomUUID().toString();
+        }
+
+        try {
+            FileUploadResult result = fileStorageService.saveAndVerifyFile(file, clientId);
+
+            if (result.success()) {
+                loggingService.logEvent(EventType.NORMAL, "File uploaded successfully", clientId);
+
+                // Send structured JSON acknowledgment via WebSocket
+                UploadAckMessage ack = new UploadAckMessage(
+                        "UPLOAD_SUCCESS",
+                        uploadId,
+                        file.getOriginalFilename(),
+                        true
+                );
+                webSocketSessionManager.sendTextToClient(clientId, ack);
+
+                // Return clean structured JSON for HTTP
+                return ResponseEntity.ok(result);
+
+            } else {
+                loggingService.logError(ErrorType.STORAGE_ERROR, "File integrity failed", clientId);
+
+                UploadAckMessage ack = new UploadAckMessage(
+                        "UPLOAD_FAILED",
+                        uploadId,
+                        file.getOriginalFilename(),
+                        false
+                );
+                webSocketSessionManager.sendTextToClient(clientId, ack);
+
+                return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(result);
+            }
+
+        } catch (Exception e) {
+            log.error("File upload failed for client {}: {}", clientId, e.getMessage(), e);
+            loggingService.logError(ErrorType.STORAGE_ERROR, e.getMessage(), clientId);
+
+            try {
+                UploadAckMessage ack = new UploadAckMessage(
+                        "UPLOAD_FAILED",
+                        uploadId,
+                        file.getOriginalFilename(),
+                        false
+                );
+                webSocketSessionManager.sendTextToClient(clientId, ack);
+            } catch (Exception ignored) {}
+
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(new FileUploadResult(false, null, e.getMessage()));
+        }
     }
-  }
 }
