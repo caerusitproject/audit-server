@@ -160,7 +160,7 @@ public class HeartbeatHandler extends TextWebSocketHandler {
                   webSocketSessionManager.removeClient(clientId);
                   loggingService.logError(
                       ErrorType.CONNECTION_ERROR,
-                      "Client"
+                      "Client "
                           + clientId
                           + " missed heartbeat for "
                           + timeout.getSeconds()
