@@ -59,7 +59,6 @@ public class FileUploadController {
                 );
                 webSocketSessionManager.sendTextToClient(clientId, ack);
 
-                // Return clean structured JSON for HTTP
                 return ResponseEntity.ok(result);
 
             } else {
