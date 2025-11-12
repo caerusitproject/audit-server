@@ -48,8 +48,6 @@ public class FileUploadController {
             FileUploadResult result = fileStorageService.saveAndVerifyFile(file, clientId);
 
             if (result.success()) {
-                loggingService.logEvent(EventType.NORMAL, "File uploaded successfully", clientId);
-
                 // Send structured JSON acknowledgment via WebSocket
                 UploadAckMessage ack = new UploadAckMessage(
                         "UPLOAD_SUCCESS",
