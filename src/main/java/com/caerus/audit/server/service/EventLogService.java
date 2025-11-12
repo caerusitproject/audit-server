@@ -61,6 +61,14 @@ public class EventLogService {
                 .build();
 
         errorLogRepository.save(logEntity);
-        emailService.notifyAdmin("Error: ", dto.getErrorDesc());
+
+        String subject = String.format("Error on client machine: %s", dto.getErrorSource());
+        String body = String.format(
+                "Error on client machine: %s%nIP Address: %s%n%n%s",
+                dto.getErrorSource(),
+                dto.getErrorSrcIPAddr(),
+                dto.getErrorDesc()
+        );
+        emailService.notifyAdminWithContext(logEntity, null, subject, body);
     }
 }
