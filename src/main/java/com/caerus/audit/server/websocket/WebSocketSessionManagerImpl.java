@@ -1,10 +1,9 @@
 package com.caerus.audit.server.websocket;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import java.io.IOException;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
-
-import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 import org.springframework.web.socket.TextMessage;
@@ -15,7 +14,7 @@ import org.springframework.web.socket.WebSocketSession;
 public class WebSocketSessionManagerImpl implements WebSocketSessionManager {
 
   private final Map<String, WebSocketSession> activeClients = new ConcurrentHashMap<>();
-    private final ObjectMapper mapper = new ObjectMapper();
+  private final ObjectMapper mapper = new ObjectMapper();
 
   /**
    * Register a client session (usually called from HeartbeatHandler after connection established)
@@ -54,7 +53,7 @@ public class WebSocketSessionManagerImpl implements WebSocketSessionManager {
   public void sendTextToClient(String clientId, Object payload) throws IOException {
     WebSocketSession session = activeClients.get(clientId);
     if (session != null && session.isOpen()) {
-        String json = mapper.writeValueAsString(payload);
+      String json = mapper.writeValueAsString(payload);
       session.sendMessage(new TextMessage(json));
       log.info("Sent message to client {}", clientId);
     } else {

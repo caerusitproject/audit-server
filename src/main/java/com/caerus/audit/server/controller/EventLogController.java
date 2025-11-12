@@ -16,17 +16,17 @@ import org.springframework.web.bind.annotation.RestController;
 @RequiredArgsConstructor
 @Slf4j
 public class EventLogController {
-    private final EventLogService eventLogService;
+  private final EventLogService eventLogService;
 
-    @PostMapping
-    public ResponseEntity<Void> eventLogEvent(@RequestBody EventLogRequest request) {
-        eventLogService.saveLog(request);
-        return ResponseEntity.ok().build();
-    }
+  @PostMapping
+  public ResponseEntity<Void> eventLogEvent(@RequestBody EventLogRequest request) {
+    eventLogService.saveLog(request);
+    return ResponseEntity.ok().build();
+  }
 
-    @PostMapping("/error")
-    public ResponseEntity<Void> errorLogEvent(@RequestBody ErrorLogRequest request) {
-        eventLogService.saveErrorLog(request);
-        return ResponseEntity.ok().build();
-    }
+  @PostMapping("/error")
+  public ResponseEntity<Void> errorLogEvent(@RequestBody ErrorLogRequest request) {
+    eventLogService.saveErrorLog(request);
+    return ResponseEntity.ok().build();
+  }
 }
