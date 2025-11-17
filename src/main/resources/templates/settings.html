@@ -13,8 +13,6 @@
         </div>
         <div class="card-body">
             <form th:action="@{/settings-ui}" th:object="${settings}" method="post">
-<!--                <div th:if="${successMessage}" class="alert alert-success" th:text="${successMessage}"></div>-->
-<!--                <div th:if="${errorMessage}" class="alert alert-danger" th:text="${errorMessage}"></div>-->
 
                 <div th:if="${successMessage}" id="successAlert"
                      class="alert alert-success alert-dismissible fade show" role="alert">
@@ -22,7 +20,6 @@
                     <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
                 </div>
 
-                <!-- Error Message -->
                 <div th:if="${errorMessage}" id="errorAlert"
                      class="alert alert-danger alert-dismissible fade show" role="alert">
                     <span th:text="${errorMessage}"></span>
@@ -59,6 +56,18 @@
                 <div class="mb-3">
                     <label class="form-label">Destination Folder Path</label>
                     <input type="text" class="form-control" th:field="*{configDestFolderPath}" placeholder="D:\AuditImages"/>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label">Destination Folder Pattern</label>
+                    <input type="text" class="form-control" id="patternInput"
+                           th:field="*{folderStructureTemplate}"
+                           placeholder="{HOSTNAME}/{YEAR}/{MONTH}/{DAY}/{TIMESTAMP}.{EXT}" />
+
+                    <small class="text-muted">Allowed:
+                        {HOSTNAME}, {YEAR}, {MONTH}, {DAY}, {HOUR}, {MIN}, {SECOND},
+                        {DATE}, {TIMESTAMP}, {EXT}
+                    </small>
                 </div>
 
                 <div class="mb-3">

@@ -1,6 +1,7 @@
 package com.caerus.audit.server.controller;
 
 import com.caerus.audit.server.dto.ServerAppSettingsDto;
+import com.caerus.audit.server.exception.ServerSettingsException;
 import com.caerus.audit.server.service.ServerAppSettingsService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -13,6 +14,8 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
+import java.rmi.ServerException;
+
 @Controller
 @RequestMapping("/settings-ui")
 @RequiredArgsConstructor
@@ -22,11 +25,13 @@ public class SettingsWebController {
 
   @GetMapping
   public String viewSettings(Model model) {
-    ServerAppSettingsDto settingsDto = service.getLatest();
-    if (settingsDto == null) {
-      settingsDto = new ServerAppSettingsDto();
-    }
-    model.addAttribute("settings", settingsDto);
+      if (!model.containsAttribute("settings")) {
+          ServerAppSettingsDto settingsDto = service.getLatest();
+          if (settingsDto == null) {
+              settingsDto = new ServerAppSettingsDto();
+          }
+          model.addAttribute("settings", settingsDto);
+      }
     return "settings";
   }
 
@@ -34,12 +39,26 @@ public class SettingsWebController {
   public String updateSettings(
       @Valid @ModelAttribute("settings") ServerAppSettingsDto settingsDto,
       BindingResult result,
+      Model model,
       RedirectAttributes redirectAttributes) {
     if (result.hasErrors()) {
       return "settings";
     }
-    service.update(settingsDto);
-    redirectAttributes.addFlashAttribute("successMessage", "Settings updated successfully!");
-    return "redirect:/settings-ui";
+      try {
+          service.update(settingsDto);
+          redirectAttributes.addFlashAttribute("successMessage", "Settings updated successfully!");
+          return "redirect:/settings-ui";
+
+      } catch (IllegalArgumentException ex) {
+          redirectAttributes.addFlashAttribute("errorMessage", ex.getMessage());
+          redirectAttributes.addFlashAttribute("settings", settingsDto);
+          return "redirect:/settings-ui";
+
+      } catch (Exception e) {
+          redirectAttributes.addFlashAttribute("errorMessage",
+                  "An unexpected error occurred");
+          redirectAttributes.addFlashAttribute("settings", settingsDto);
+          return "redirect:/settings-ui";
+      }
   }
 }

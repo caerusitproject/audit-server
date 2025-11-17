@@ -4,7 +4,9 @@ import com.caerus.audit.server.dto.ServerAppSettingsDto;
 import com.caerus.audit.server.entity.ServerAppSettings;
 import com.caerus.audit.server.enums.ErrorType;
 import com.caerus.audit.server.enums.EventType;
+import com.caerus.audit.server.exception.ServerSettingsException;
 import com.caerus.audit.server.repository.ServerAppSettingsRepository;
+import com.caerus.audit.server.util.PatternValidator;
 import com.caerus.audit.server.util.ServerAppSettingsMapper;
 import jakarta.annotation.PostConstruct;
 import java.util.List;
@@ -12,6 +14,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.dao.DataAccessException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -28,8 +31,13 @@ public class ServerAppSettingsService {
 
   @PostConstruct
   public void preloadCache() {
-    cache.set(getLatest());
-    log.info("Preloaded ServerAppSettings into cache");
+      try {
+          cache.set(getLatest());
+          log.info("Preloaded ServerAppSettings into cache");
+      } catch (Exception e) {
+          log.warn("Failed to preload ServerAppSettings: {}", e.getMessage());
+          loggingService.logError(ErrorType.NORMAL, "Failed to preload settings", e.getClass().getName());
+      }
   }
 
   public ServerAppSettingsDto getLatest() {
@@ -45,14 +53,16 @@ public class ServerAppSettingsService {
   @Transactional
   public ServerAppSettingsDto update(ServerAppSettingsDto updateDto) {
     try {
-      ServerAppSettings entity = ServerAppSettingsMapper.toEntity(updateDto);
+        long t1 = System.currentTimeMillis();
+        PatternValidator.validate(updateDto.getFolderStructureTemplate());
+        System.out.println("VALIDATION TOOK = " + (System.currentTimeMillis()-t1) + "ms");
+        ServerAppSettings entity = ServerAppSettingsMapper.toEntity(updateDto);
 
       entity.setSettingId(null);
       ServerAppSettings saved = serverAppSettingsRepository.save(entity);
       ServerAppSettingsDto savedDto = ServerAppSettingsMapper.toDto(saved);
       cache.set(savedDto);
 
-      // publish event so websocket notifier can push to clients
       eventPublisher.publishEvent(new SettingsChangedEvent(this, savedDto));
       loggingService.logEvent(
           EventType.SERVER_SETTING_PUSHED,
@@ -60,9 +70,17 @@ public class ServerAppSettingsService {
           "System");
       log.info("Server settings updated and cached (id={})", savedDto.getSettingId());
       return savedDto;
-    } catch (Exception e) {
-      loggingService.logError(ErrorType.NORMAL, e.getMessage(), e.getClass().getName());
-      throw e;
+
+    }catch (DataAccessException dae) {
+        loggingService.logError(ErrorType.NORMAL, dae.getMessage(), dae.getClass().getName());
+        throw new ServerSettingsException("Database error while updating server settings", dae);
+
+    }
+    catch (Exception e) {
+        long t2 = System.currentTimeMillis();
+        loggingService.logError(ErrorType.NORMAL, e.getMessage(), e.getClass().getName());
+        System.out.println("LOG ERROR TOOK = " + (System.currentTimeMillis()-t2) + "ms");
+        throw new ServerSettingsException("Unexpected error while updating server settings", e);
     }
   }
 }

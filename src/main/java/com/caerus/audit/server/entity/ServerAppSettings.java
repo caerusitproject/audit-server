@@ -37,10 +37,6 @@ public class ServerAppSettings {
   @Column(length = 1024)
   private String folderStructureTemplate;
 
-  private Short tempFolderFreeSpaceThreshold;
-  private Short lockThreshold;
-  private Boolean emailNotifyEnabled;
-
   @Column(columnDefinition = "TIMESTAMP WITH TIME ZONE")
   private Instant createdAt;
 
