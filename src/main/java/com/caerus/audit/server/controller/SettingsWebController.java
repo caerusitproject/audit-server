@@ -39,7 +39,6 @@ public class SettingsWebController {
   public String updateSettings(
       @Valid @ModelAttribute("settings") ServerAppSettingsDto settingsDto,
       BindingResult result,
-      Model model,
       RedirectAttributes redirectAttributes) {
     if (result.hasErrors()) {
       return "settings";

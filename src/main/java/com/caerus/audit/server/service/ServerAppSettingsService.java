@@ -10,6 +10,7 @@ import com.caerus.audit.server.util.PatternValidator;
 import com.caerus.audit.server.util.ServerAppSettingsMapper;
 import jakarta.annotation.PostConstruct;
 import java.util.List;
+import java.util.Optional;
 import java.util.concurrent.atomic.AtomicReference;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -44,8 +45,8 @@ public class ServerAppSettingsService {
     ServerAppSettingsDto cached = cache.get();
     if (cached != null) return cached;
 
-    List<ServerAppSettings> all = serverAppSettingsRepository.findAllOrderByIdDesc();
-    ServerAppSettingsDto dto = all.isEmpty() ? null : ServerAppSettingsMapper.toDto(all.get(0));
+    Optional<ServerAppSettings> settingRes = serverAppSettingsRepository.findTopByOrderBySettingIdDesc();
+    ServerAppSettingsDto dto = settingRes.map(ServerAppSettingsMapper::toDto).orElse(null);
     cache.set(dto);
     return dto;
   }

@@ -27,9 +27,6 @@ import org.springframework.web.multipart.MultipartFile;
 public class FileStorageService {
 
   private final ServerAppSettingsService serverAppSettingsService;
-//  private static final Set<String> ALLOWED_TOKENS = Set.of(
-//          "HOSTNAME", "YEAR", "MONTH", "DAY", "HOUR", "MIN", "SECOND", "DATE", "TIMESTAMP", "EXT"
-//  );
 
   public FileUploadResult saveAndVerifyFile(MultipartFile file, String clientId) {
     try {
@@ -96,17 +93,6 @@ public class FileStorageService {
     }
     return result;
   }
-
-//  private void validatePattern(String pattern){
-//      var matcher = Pattern.compile("\\{([^}]+)}").matcher(pattern);
-//
-//      while(matcher.find()){
-//          String token = matcher.group(1).toUpperCase();
-//          if(!ALLOWED_TOKENS.contains(token)){
-//              throw new IllegalArgumentException("Invalid token in folder pattern: {" + token + "}");
-//          }
-//      }
-//  }
 
   private String getFileExtension(String filename) {
     if (filename == null) return "";
