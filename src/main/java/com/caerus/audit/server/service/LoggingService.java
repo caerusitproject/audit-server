@@ -11,6 +11,7 @@ import java.net.InetAddress;
 import java.time.Instant;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -20,11 +21,20 @@ public class LoggingService {
 
   private final ErrorLogRepository errorRepo;
   private final EventLogRepository eventRepo;
-  private final EmailLogRepository emailRepo;
   private final ErrorTypeMstrRepository errorTypeRepo;
   private final EventTypeMstrRepository eventTypeRepo;
   private final EmailNotificationService emailService;
 
+  private static final String localIp = resolveLocalIp();
+  private static String resolveLocalIp() {
+    try {
+      return InetAddress.getLocalHost().getHostAddress();
+    } catch (Exception e) {
+      return "unknown";
+    }
+  }
+
+  @Async
   public void logError(ErrorType errorType, String desc, String source) {
     try {
       ErrorTypeMstr type =
@@ -33,13 +43,11 @@ public class LoggingService {
               .orElseThrow(
                   () -> new IllegalStateException("Invalid error type: " + errorType.getCode()));
 
-      String ip = InetAddress.getLocalHost().getHostAddress();
-      ErrorLog logEntry =
-          ErrorLog.builder()
+     ErrorLog logEntry = ErrorLog.builder()
               .errorType(type)
               .errorDesc(desc)
               .errorSource(source)
-              .errorSrcIPAddr(ip)
+              .errorSrcIPAddr(localIp)
               .errorDTime(Instant.now())
               .build();
       errorRepo.save(logEntry);
@@ -50,21 +58,19 @@ public class LoggingService {
     }
   }
 
+  @Async
   public void logEvent(EventType eventType, String desc, String source) {
     try {
-      EventTypeMstr type =
-          eventTypeRepo
-              .findById(eventType.getCode())
+      EventTypeMstr type = eventTypeRepo.findById(eventType.getCode())
               .orElseThrow(
                   () -> new IllegalStateException("Invalid event type: " + eventType.getCode()));
 
-      String ip = InetAddress.getLocalHost().getHostAddress();
       EventLog event =
           EventLog.builder()
               .eventType(type)
               .eventDesc(desc)
               .eventSource(source)
-              .eventSrcIPAddr(ip)
+              .eventSrcIPAddr(localIp)
               .eventDTime(Instant.now())
               .build();
       eventRepo.save(event);

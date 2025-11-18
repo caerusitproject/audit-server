@@ -11,6 +11,11 @@ import java.security.DigestInputStream;
 import java.security.MessageDigest;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.Map;
+import java.util.Set;
+import java.util.regex.Pattern;
+
+import com.caerus.audit.server.util.PatternValidator;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -28,23 +33,39 @@ public class FileStorageService {
       // Load destination path from server settings
       ServerAppSettingsDto settings = serverAppSettingsService.getLatest();
       String baseDir = settings.getConfigDestFolderPath();
+      String pattern = settings.getFolderStructureTemplate();
       if (baseDir == null || baseDir.isBlank()) {
         throw new IllegalStateException("Destination folder not configured in settings");
       }
 
-      // Build folder structure {HOSTNAME}/{YEAR}/{MONTH}/{DAY}
-      String hostname = clientId;
-      LocalDateTime now = LocalDateTime.now();
-      String relativePath =
-          String.format(
-              "%s/%d/%02d/%02d", hostname, now.getYear(), now.getMonthValue(), now.getDayOfMonth());
+     if(pattern == null || pattern.isBlank()) {
+        throw new IllegalStateException("Folder structure template not configured in settings");
+      }
 
-      Path destDir = Paths.get(baseDir, relativePath);
-      Files.createDirectories(destDir);
+     LocalDateTime now = LocalDateTime.now();
+     String ext = getFileExtension(file.getOriginalFilename());
+     String timestamp = String.valueOf(System.currentTimeMillis());
 
-      String timestamp = now.format(DateTimeFormatter.ofPattern("HHmmssSSS"));
-      String ext = getFileExtension(file.getOriginalFilename());
-      Path destFile = destDir.resolve(timestamp + (ext.isEmpty() ? "" : "." + ext));
+        Map<String, String> tokens = Map.of(
+                "HOSTNAME", clientId,
+                "YEAR", String.valueOf(now.getYear()),
+                "MONTH", String.format("%02d", now.getMonthValue()),
+                "DAY", String.format("%02d", now.getDayOfMonth()),
+                "HOUR", String.format("%02d", now.getHour()),
+                "MIN", String.format("%02d", now.getMinute()),
+                "SECOND", String.format("%02d", now.getSecond()),
+                "DATE", now.format(DateTimeFormatter.ofPattern("yyyyMMdd")),
+                "TIMESTAMP", timestamp,
+                "EXT", ext.isEmpty() ? "" : ext
+        );
+
+     PatternValidator.validate(pattern);
+      String resolved = resolvePattern(pattern, tokens);
+      Path outputPath = Paths.get(baseDir, resolved);
+      Path dir = outputPath.getParent();
+      if(dir != null) Files.createDirectories(dir);
+
+      Path destFile = outputPath;
 
       String originalChecksum = computeChecksum(file.getInputStream(), "SHA-256");
 
@@ -61,6 +82,16 @@ public class FileStorageService {
       log.error("Error saving file for client {}: {}", clientId, e.getMessage(), e);
       return new FileUploadResult(false, null, e.getMessage());
     }
+  }
+
+  private String resolvePattern(String pattern, Map<String, String> tokens) {
+    String result = pattern;
+    for (Map.Entry<String, String> entry : tokens.entrySet()) {
+      result = result.replaceAll(
+              "(?i)\\{" + entry.getKey() + "}",
+              entry.getValue());
+    }
+    return result;
   }
 
   private String getFileExtension(String filename) {

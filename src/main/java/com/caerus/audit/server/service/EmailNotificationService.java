@@ -26,7 +26,6 @@ public class EmailNotificationService {
   private final ServerAppSettingsRepository settingsRepo;
   private final EmailLogRepository emailLogRepo;
 
-  @Transactional
   public void notifyAdmin(String subject, String body) {
     try {
       Optional<ServerAppSettings> configOpt = settingsRepo.findAll().stream().findFirst();
@@ -39,8 +38,7 @@ public class EmailNotificationService {
       String adminEmail = configOpt.get().getConfigAdminEmailAddr();
       sendEmail(adminEmail, subject, body);
 
-      EmailLog emailLog =
-          EmailLog.builder()
+      EmailLog emailLog = EmailLog.builder()
               .emailSubject(subject)
               .emailBody(body)
               .emailSentTo(adminEmail)

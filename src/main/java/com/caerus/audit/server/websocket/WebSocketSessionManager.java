@@ -6,7 +6,7 @@ import org.springframework.web.socket.WebSocketSession;
 public interface WebSocketSessionManager {
   void broadcastText(String payload);
 
-  void sendTextToClient(String clientId, Object  payload) throws IOException;
+  void sendTextToClient(String clientId, Object payload) throws IOException;
 
   void registerClient(String clientId, WebSocketSession session);
 

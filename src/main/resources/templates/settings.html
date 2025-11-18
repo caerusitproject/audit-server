@@ -5,28 +5,27 @@
     <title>Server App Settings</title>
     <link rel="stylesheet" th:href="@{/webjars/bootstrap/5.3.3/css/bootstrap.min.css}" />
 </head>
+
 <body class="bg-light">
 <div class="container mt-5">
     <div class="card shadow-lg">
         <div class="card-header bg-primary text-white">
             <h4>Server Configuration Settings</h4>
         </div>
+
         <div class="card-body">
             <form th:action="@{/settings-ui}" th:object="${settings}" method="post">
-<!--                <div th:if="${successMessage}" class="alert alert-success" th:text="${successMessage}"></div>-->
-<!--                <div th:if="${errorMessage}" class="alert alert-danger" th:text="${errorMessage}"></div>-->
 
                 <div th:if="${successMessage}" id="successAlert"
                      class="alert alert-success alert-dismissible fade show" role="alert">
                     <span th:text="${successMessage}"></span>
-                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
                 </div>
 
-                <!-- Error Message -->
                 <div th:if="${errorMessage}" id="errorAlert"
                      class="alert alert-danger alert-dismissible fade show" role="alert">
                     <span th:text="${errorMessage}"></span>
-                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
                 </div>
 
                 <div class="mb-3">
@@ -61,6 +60,25 @@
                     <input type="text" class="form-control" th:field="*{configDestFolderPath}" placeholder="D:\AuditImages"/>
                 </div>
 
+                <!-- Folder Pattern -->
+                <div class="mb-3">
+                    <label class="form-label">Destination Folder Pattern</label>
+                    <input type="text"
+                           class="form-control"
+                           id="patternInput"
+                           th:field="*{folderStructureTemplate}"
+                           placeholder="{HOSTNAME}/{YEAR}/{MONTH}/{DAY}/{TIMESTAMP}.{EXT}" />
+
+                    <small class="text-muted">
+                        Allowed tokens:
+                        {HOSTNAME}, {YEAR}, {MONTH}, {DAY}, {HOUR}, {MIN}, {SECOND},
+                        {DATE}, {TIMESTAMP}, {EXT}
+                    </small>
+
+                    <!-- Instant validation error -->
+                    <div id="patternError" class="text-danger mt-1" style="display:none;"></div>
+                </div>
+
                 <div class="mb-3">
                     <label class="form-label">Admin Email</label>
                     <input type="email" class="form-control" th:field="*{configAdminEmailAddr}" placeholder="admin@domain.com"/>
@@ -71,28 +89,72 @@
                     <input type="text" class="form-control" th:field="*{configAdminADGroups}" placeholder="Domain Admins"/>
                 </div>
 
-                <button type="submit" class="btn btn-success mt-3">Save Changes</button>
+                <button type="submit" id="submitBtn" class="btn btn-success mt-3">
+                    Save Changes
+                </button>
+
             </form>
         </div>
     </div>
 </div>
+
 <script th:src="@{/webjars/bootstrap/5.3.3/js/bootstrap.bundle.min.js}"></script>
+
 <script>
     document.addEventListener("DOMContentLoaded", function () {
+
+        // Auto hide bootstrap alerts
         const alerts = document.querySelectorAll("#successAlert, #errorAlert");
         alerts.forEach(alert => {
             if (alert) {
                 setTimeout(() => {
-                    // Smooth fade-out using Bootstrap classes
                     alert.classList.remove('show');
                     alert.classList.add('fade');
-
-                    // After transition (~500ms), remove from DOM entirely
                     setTimeout(() => alert.remove(), 500);
                 }, 3000);
             }
         });
+
+        // Allowed tokens list (backend equivalent)
+        const allowedTokens = new Set([
+            "HOSTNAME", "YEAR", "MONTH", "DAY", "HOUR",
+            "MIN", "SECOND", "DATE", "TIMESTAMP", "EXT"
+        ]);
+
+        const input = document.getElementById("patternInput");
+        const errorBox = document.getElementById("patternError");
+        const submitBtn = document.getElementById("submitBtn");
+        const tokenRegex = /\{([^}]+)\}/g;
+
+        function validatePattern() {
+            const value = input.value;
+            let invalidTokens = [];
+            let match;
+
+            while ((match = tokenRegex.exec(value)) !== null) {
+                const token = match[1].toUpperCase();
+                if (!allowedTokens.has(token)) {
+                    invalidTokens.push(token);
+                }
+            }
+
+            if (invalidTokens.length > 0) {
+                errorBox.style.display = "block";
+                errorBox.textContent = "Invalid token(s): " + invalidTokens.join(", ");
+                input.classList.add("is-invalid");
+                submitBtn.disabled = true;
+            } else {
+                errorBox.style.display = "none";
+                errorBox.textContent = "";
+                input.classList.remove("is-invalid");
+                submitBtn.disabled = false;
+            }
+        }
+
+        input.addEventListener("input", validatePattern);
+        validatePattern(); // validate initial value on page load
     });
 </script>
+
 </body>
 </html>

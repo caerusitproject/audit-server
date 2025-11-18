@@ -19,56 +19,56 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 @Slf4j
 public class EventLogService {
-    private final EventLogRepository eventLogRepository;
-    private final ErrorLogRepository errorLogRepository;
-    private final EventTypeMstrRepository eventTypeMstrRepository;
-    private final ErrorTypeMstrRepository errorTypeMstrRepository;
-    private final EmailNotificationService emailService;
+  private final EventLogRepository eventLogRepository;
+  private final ErrorLogRepository errorLogRepository;
+  private final EventTypeMstrRepository eventTypeMstrRepository;
+  private final ErrorTypeMstrRepository errorTypeMstrRepository;
+  private final EmailNotificationService emailService;
 
-    @Transactional
-    public void saveLog(EventLogRequest dto) {
-        EventTypeMstr eventTypeMstr = null;
+  @Transactional
+  public void saveLog(EventLogRequest dto) {
+    EventTypeMstr eventTypeMstr = null;
 
-        if (dto.getEventTypeId() != null) {
-            eventTypeMstr = eventTypeMstrRepository.findById(dto.getEventTypeId()).orElse(null);
-        }
-
-        EventLog logEntity = EventLog.builder()
-                .eventType(eventTypeMstr)
-                .eventDesc(dto.getEventDesc())
-                .eventSource(dto.getEventSource())
-                .eventSrcIPAddr(dto.getEventSrcIPAddr())
-                .eventDTime(dto.getEventDTime())
-                .build();
-
-        eventLogRepository.save(logEntity);
+    if (dto.getEventTypeId() != null) {
+      eventTypeMstr = eventTypeMstrRepository.findById(dto.getEventTypeId()).orElse(null);
     }
 
-    @Transactional
-    public void saveErrorLog(ErrorLogRequest dto) {
-        ErrorTypeMstr errorTypeMstr = null;
+    EventLog logEntity =
+        EventLog.builder()
+            .eventType(eventTypeMstr)
+            .eventDesc(dto.getEventDesc())
+            .eventSource(dto.getEventSource())
+            .eventSrcIPAddr(dto.getEventSrcIPAddr())
+            .eventDTime(dto.getEventDTime())
+            .build();
 
-        if (dto.getErrorTypeId() != null) {
-            errorTypeMstr = errorTypeMstrRepository.findById(dto.getErrorTypeId()).orElse(null);
-        }
+    eventLogRepository.save(logEntity);
+  }
 
-        ErrorLog logEntity = ErrorLog.builder()
-                .errorType(errorTypeMstr)
-                .errorDesc(dto.getErrorDesc())
-                .errorSource(dto.getErrorSource())
-                .errorSrcIPAddr(dto.getErrorSrcIPAddr())
-                .errorDTime(dto.getErrorDTime())
-                .build();
+  @Transactional
+  public void saveErrorLog(ErrorLogRequest dto) {
+    ErrorTypeMstr errorTypeMstr = null;
 
-        errorLogRepository.save(logEntity);
-
-        String subject = String.format("Error on client machine: %s", dto.getErrorSource());
-        String body = String.format(
-                "Error on client machine: %s%nIP Address: %s%n%n%s",
-                dto.getErrorSource(),
-                dto.getErrorSrcIPAddr(),
-                dto.getErrorDesc()
-        );
-        emailService.notifyAdminWithContext(logEntity, null, subject, body);
+    if (dto.getErrorTypeId() != null) {
+      errorTypeMstr = errorTypeMstrRepository.findById(dto.getErrorTypeId()).orElse(null);
     }
+
+    ErrorLog logEntity =
+        ErrorLog.builder()
+            .errorType(errorTypeMstr)
+            .errorDesc(dto.getErrorDesc())
+            .errorSource(dto.getErrorSource())
+            .errorSrcIPAddr(dto.getErrorSrcIPAddr())
+            .errorDTime(dto.getErrorDTime())
+            .build();
+
+    errorLogRepository.save(logEntity);
+
+    String subject = String.format("Error on client machine: %s", dto.getErrorSource());
+    String body =
+        String.format(
+            "Error on client machine: %s%nIP Address: %s%n%n%s",
+            dto.getErrorSource(), dto.getErrorSrcIPAddr(), dto.getErrorDesc());
+    emailService.notifyAdminWithContext(logEntity, null, subject, body);
+  }
 }

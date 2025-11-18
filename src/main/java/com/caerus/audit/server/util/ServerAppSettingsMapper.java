@@ -19,6 +19,7 @@ public final class ServerAppSettingsMapper {
         .configDestFolderPath(e.getConfigDestFolderPath())
         .configAdminEmailAddr(e.getConfigAdminEmailAddr())
         .configAdminADGroups(e.getConfigAdminADGroups())
+        .folderStructureTemplate(e.getFolderStructureTemplate())
         .build();
   }
 
@@ -34,6 +35,7 @@ public final class ServerAppSettingsMapper {
         .configDestFolderPath(dto.getConfigDestFolderPath())
         .configAdminEmailAddr(dto.getConfigAdminEmailAddr())
         .configAdminADGroups(dto.getConfigAdminADGroups())
+        .folderStructureTemplate(dto.getFolderStructureTemplate())
         .build();
   }
 }

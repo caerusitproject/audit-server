@@ -11,7 +11,8 @@
 	<groupId>com.caerus.audit</groupId>
 	<artifactId>audit-server</artifactId>
 	<version>0.0.1-SNAPSHOT</version>
-	<name>Audit Server</name>
+    <packaging>war</packaging>
+	<name>audit-server</name>
 	<description>Server control center for auditing workstation activity</description>
 	<properties>
 		<java.version>21</java.version>

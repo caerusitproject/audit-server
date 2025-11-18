@@ -8,8 +8,8 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @NoArgsConstructor
 public class UploadAckMessage {
-    private String type;
-    private String uploadId;
-    private String fileName;
-    private boolean success;
+  private String type;
+  private String uploadId;
+  private String fileName;
+  private boolean success;
 }
