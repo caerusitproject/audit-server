@@ -56,7 +56,6 @@ public class ServerAppSettingsService {
     try {
         long t1 = System.currentTimeMillis();
         PatternValidator.validate(updateDto.getFolderStructureTemplate());
-        System.out.println("VALIDATION TOOK = " + (System.currentTimeMillis()-t1) + "ms");
         ServerAppSettings entity = ServerAppSettingsMapper.toEntity(updateDto);
 
       entity.setSettingId(null);
@@ -80,7 +79,6 @@ public class ServerAppSettingsService {
     catch (Exception e) {
         long t2 = System.currentTimeMillis();
         loggingService.logError(ErrorType.NORMAL, e.getMessage(), e.getClass().getName());
-        System.out.println("LOG ERROR TOOK = " + (System.currentTimeMillis()-t2) + "ms");
         throw new ServerSettingsException("Unexpected error while updating server settings", e);
     }
   }
