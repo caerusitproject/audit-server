@@ -12,9 +12,13 @@
     <appender name="FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
         <file>${LOG_PATH}/${APP_NAME}/${APP_NAME}.log</file>
 
-        <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
-            <fileNamePattern>${LOG_PATH}/${APP_NAME}/${APP_NAME}-%d{yyyy-MM-dd}.log</fileNamePattern>
+        <rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
+            <fileNamePattern>
+                ${LOG_PATH}/${APP_NAME}/${APP_NAME}-%d{yyyy-MM-dd}.%i.log
+            </fileNamePattern>
+            <maxFileSize>50MB</maxFileSize>
             <maxHistory>30</maxHistory>
+            <totalSizeCap>10GB</totalSizeCap>
         </rollingPolicy>
 
         <encoder class="net.logstash.logback.encoder.LoggingEventCompositeJsonEncoder">
@@ -27,23 +31,20 @@
                 <stackTrace fieldName="error"/>
 
                 <provider class="net.logstash.logback.composite.GlobalCustomFieldsJsonProvider">
-                    <customFields>{"app":"${APP_NAME}","env":"dev"}</customFields>
+                    <customFields>{"app":"${APP_NAME}","env":"${spring.profiles.active:-unknown}"}</customFields>
                 </provider>
 
                 <mdc>
                     <includeMdcKeyName>correlationId</includeMdcKeyName>
                 </mdc>
             </providers>
-
-            <jsonGeneratorDecorator
-                    class="net.logstash.logback.decorate.PrettyPrintingJsonGeneratorDecorator"/>
         </encoder>
     </appender>
 
 
     <appender name="ASYNC_FILE" class="ch.qos.logback.classic.AsyncAppender">
         <appender-ref ref="FILE"/>
-        <queueSize>512</queueSize>
+        <queueSize>2048</queueSize>
         <discardingThreshold>0</discardingThreshold>
         <neverBlock>true</neverBlock>
     </appender>
@@ -53,9 +54,10 @@
         <appender-ref ref="ASYNC_FILE"/>
     </root>
 
-    <logger name="com.caerus.audit.server" level="DEBUG"/>
+    <logger name="com.caerus.audit.server" level="INFO"/>
     <logger name="org.springframework.security" level="WARN"/>
     <logger name="org.springframework.web" level="INFO"/>
-    <logger name="org.hibernate.SQL" level="DEBUG"/>
+    <logger name="org.hibernate.SQL" level="WARN"/>
+    <logger name="org.hibernate.type.descriptor.sql" level="WARN"/>
 
 </configuration>
