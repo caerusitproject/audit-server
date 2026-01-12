@@ -6,88 +6,119 @@ import com.caerus.audit.server.entity.EventLog;
 import com.caerus.audit.server.entity.ServerAppSettings;
 import com.caerus.audit.server.repository.EmailLogRepository;
 import com.caerus.audit.server.repository.ServerAppSettingsRepository;
-import jakarta.mail.MessagingException;
-import jakarta.mail.internet.MimeMessage;
-import java.time.Instant;
-import java.util.Optional;
+import com.microsoft.graph.models.*;
+import com.microsoft.graph.requests.GraphServiceClient;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.mail.javamail.JavaMailSender;
-import org.springframework.mail.javamail.MimeMessageHelper;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
+
+import java.time.Instant;
+import java.util.List;
+import java.util.Optional;
 
 @Slf4j
 @Service
 @RequiredArgsConstructor
 public class EmailNotificationService {
 
-  private final JavaMailSender mailSender;
-  private final ServerAppSettingsRepository settingsRepo;
-  private final EmailLogRepository emailLogRepo;
+    private final GraphServiceClient<?> graphClient;
+    private final ServerAppSettingsRepository settingsRepo;
+    private final EmailLogRepository emailLogRepo;
 
-  public void notifyAdmin(String subject, String body) {
-    try {
-      Optional<ServerAppSettings> configOpt = settingsRepo.findAll().stream().findFirst();
+    @Value("${microsoft.graph.from-user}")
+    private String fromUser;
 
-      if (configOpt.isEmpty() || configOpt.get().getConfigAdminEmailAddr() == null) {
-        log.warn("No admin email configured in ServerAppSettings. Skipping email notification.");
-        return;
-      }
+    public void notifyAdmin(String subject, String body) {
+        try {
+            Optional<ServerAppSettings> configOpt = settingsRepo.findTopByOrderBySettingIdDesc();
+            if (configOpt.isEmpty() || configOpt.get().getConfigAdminEmailAddr() == null) {
+                log.warn("Admin email not configured. Skipping email notification.");
+                return;
+            }
 
-      String adminEmail = configOpt.get().getConfigAdminEmailAddr();
-      sendEmail(adminEmail, subject, body);
+            String adminEmail = configOpt.get().getConfigAdminEmailAddr();
+            sendEmail(adminEmail, subject, body);
 
-      EmailLog emailLog = EmailLog.builder()
-              .emailSubject(subject)
-              .emailBody(body)
-              .emailSentTo(adminEmail)
-              .createdDTime(Instant.now())
-              .build();
+            emailLogRepo.save(
+                    EmailLog.builder()
+                            .emailSubject(subject)
+                            .emailBody(body)
+                            .emailSentTo(adminEmail)
+                            .createdDTime(Instant.now())
+                            .build()
+            );
 
-      emailLogRepo.save(emailLog);
-      log.info("Notification email sent to admin: {}", adminEmail);
-    } catch (Exception e) {
-      log.error("Failed to send admin email: {}", e.getMessage(), e);
+            log.info("Admin notification email sent to {}", adminEmail);
+
+        } catch (Exception ex) {
+            log.error("Failed to send admin email", ex);
+        }
     }
-  }
 
-  private void sendEmail(String to, String subject, String body) throws MessagingException {
-    MimeMessage message = mailSender.createMimeMessage();
-    MimeMessageHelper helper = new MimeMessageHelper(message, false, "UTF-8");
-    helper.setTo(to);
-    helper.setSubject(subject);
-    helper.setText(body, false);
-    mailSender.send(message);
-  }
+    private void sendEmail(String to, String subject, String body) {
 
-  @Transactional
-  public void notifyAdminWithContext(ErrorLog error, EventLog event, String subject, String body) {
-    try {
-      Optional<ServerAppSettings> configOpt = settingsRepo.findAll().stream().findFirst();
-      if (configOpt.isEmpty()) {
-        log.warn("ServerAppSettings missing. Skipping contextual email notification.");
-        return;
-      }
+        Message message = new Message();
+        message.subject = subject;
 
-      String adminEmail = configOpt.get().getConfigAdminEmailAddr();
-      sendEmail(adminEmail, subject, body);
+        ItemBody itemBody = new ItemBody();
+        itemBody.contentType = BodyType.TEXT;
+        itemBody.content = body;
+        message.body = itemBody;
 
-      EmailLog emailLog =
-          EmailLog.builder()
-              .error(error)
-              .event(event)
-              .emailSubject(subject)
-              .emailBody(body)
-              .emailSentTo(adminEmail)
-              .createdDTime(Instant.now())
-              .build();
+        Recipient recipient = new Recipient();
+        EmailAddress emailAddress = new EmailAddress();
+        emailAddress.address = to;
+        recipient.emailAddress = emailAddress;
 
-      emailLogRepo.save(emailLog);
-      log.info("Contextual email sent to admin: {}", adminEmail);
+        message.toRecipients = List.of(recipient);
 
-    } catch (Exception e) {
-      log.error("Failed to send contextual admin email: {}", e.getMessage(), e);
+        graphClient
+                .users(fromUser)
+                .sendMail(
+                        UserSendMailParameterSet
+                                .newBuilder()
+                                .withMessage(message)
+                                .withSaveToSentItems(false)
+                                .build()
+                )
+                .buildRequest()
+                .post();
     }
-  }
+
+    public void notifyAdminWithContext(
+            ErrorLog error,
+            EventLog event,
+            String subject,
+            String body) {
+
+        try {
+            Optional<ServerAppSettings> configOpt = settingsRepo.findTopByOrderBySettingIdDesc();
+            if (configOpt.isEmpty()) {
+                log.warn("ServerAppSettings missing. Skipping contextual email.");
+                return;
+            }
+
+            String adminEmail = configOpt.get().getConfigAdminEmailAddr();
+            sendEmail(adminEmail, subject, body);
+
+            emailLogRepo.save(
+                    EmailLog.builder()
+                            .error(error)
+                            .event(event)
+                            .emailSubject(subject)
+                            .emailBody(body)
+                            .emailSentTo(adminEmail)
+                            .createdDTime(Instant.now())
+                            .build()
+            );
+
+            log.info("Contextual admin email sent to {}", adminEmail);
+
+        } catch (Exception ex) {
+            log.error("Failed to send contextual admin email", ex);
+        }
+    }
 }
+
+

@@ -54,7 +54,6 @@ public class ServerAppSettingsService {
   @Transactional
   public ServerAppSettingsDto update(ServerAppSettingsDto updateDto) {
     try {
-        long t1 = System.currentTimeMillis();
         PatternValidator.validate(updateDto.getFolderStructureTemplate());
         ServerAppSettings entity = ServerAppSettingsMapper.toEntity(updateDto);
 
@@ -72,13 +71,11 @@ public class ServerAppSettingsService {
       return savedDto;
 
     }catch (DataAccessException dae) {
-        loggingService.logError(ErrorType.NORMAL, dae.getMessage(), dae.getClass().getName());
+        loggingService.logError(ErrorType.NORMAL, "Error updating server settings due to: " + dae.getMessage(), dae.getClass().getName());
         throw new ServerSettingsException("Database error while updating server settings", dae);
-
     }
     catch (Exception e) {
-        long t2 = System.currentTimeMillis();
-        loggingService.logError(ErrorType.NORMAL, e.getMessage(), e.getClass().getName());
+        loggingService.logError(ErrorType.NORMAL, "Error updating server settings due to: " + e.getMessage(), e.getClass().getName());
         throw new ServerSettingsException("Unexpected error while updating server settings", e);
     }
   }
