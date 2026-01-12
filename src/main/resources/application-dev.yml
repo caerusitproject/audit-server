@@ -1,0 +1,44 @@
+server:
+  port: 8089
+  shutdown: graceful
+
+spring:
+  application:
+    name: audit-server
+
+  datasource:
+    url: ${DB_URL}
+    username: ${DB_USERNAME}
+    password: ${DB_PASSWORD}
+    driver-class-name: org.postgresql.Driver
+
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    show-sql: false
+    database-platform: org.hibernate.dialect.PostgreSQLDialect
+
+  servlet:
+    multipart:
+      max-file-size: 50MB
+      max-request-size: 60MB
+
+  liquibase:
+    enabled: true
+    change-log: classpath:db/changelog/db.changelog-master.yaml
+    contexts: ${LIQUIBASE_CONTEXT:prod}
+    default-schema: public
+    drop-first: false
+
+  thymeleaf:
+    cache: true
+    prefix: classpath:/templates/
+    suffix: .html
+
+microsoft:
+  graph:
+    tenant-id: ${MS_GRAPH_TENANT_ID}
+    client-id: ${MS_GRAPH_CLIENT_ID}
+    client-secret: ${MS_GRAPH_CLIENT_SECRET}
+    from-user: ${MS_GRAPH_FROM_USER}
+
