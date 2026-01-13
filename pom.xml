@@ -10,7 +10,7 @@
 	</parent>
 	<groupId>com.caerus.audit</groupId>
 	<artifactId>audit-server</artifactId>
-	<version>0.0.1-SNAPSHOT</version>
+	<version>1.0.0</version>
 	<name>audit-server</name>
 	<description>Server control center for auditing workstation activity</description>
 	<properties>
